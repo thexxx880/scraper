@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reproductor Seguro</title>
-
+<title>Lz Protect Player</title>
 <style>
 html,body{
 margin:0;
@@ -12,7 +11,6 @@ height:100%;
 background:#000;
 overflow:hidden;
 }
-
 iframe{
 width:100%;
 height:100%;
@@ -21,42 +19,33 @@ border:none;
 </style>
 </head>
 <body>
-
 <iframe id="frame"
-sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-referrerpolicy="no-referrer"
-allowfullscreen>
+        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+        referrerpolicy="no-referrer"
+        allowfullscreen>
 </iframe>
 
 <script>
-function getParam(name){
-let p = new URLSearchParams(location.search);
-return p.get(name);
+function getParam(name) {
+    return new URLSearchParams(location.search).get(name);
 }
 
-try{
-let code = getParam("v");
-
-if(code){
-let url = decodeURIComponent(escape(atob(code)));
-
-document.getElementById("frame").src = url;
+try {
+    const code = getParam("v");
+    if (code) {
+        // Cargamos el HTML LIMPIO directamente con data: URL (más seguro y rápido)
+        const dataUrl = "data:text/html;base64," + code;
+        document.getElementById("frame").src = dataUrl;
+    } else {
+        document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:40px">❌ No se recibió código</h2>`;
+    }
+} catch (e) {
+    document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:40px">❌ Error al decodificar</h2>`;
 }
-}catch(e){
-document.body.innerHTML="<h2 style='color:white;text-align:center'>Error</h2>";
-}
 
-/* Protección local */
-window.open = function(){ return null; };
-
-document.addEventListener("contextmenu", e=>e.preventDefault());
-
-document.addEventListener("click", function(e){
-if(e.target.tagName==="A"){
-e.preventDefault();
-}
-}, true);
+// Protecciones extras en el reproductor
+window.open = function() { return null; };
+document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
-
 </body>
 </html>
