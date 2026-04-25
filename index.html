@@ -16,12 +16,12 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz </h2>
-    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://cubeembed.rpmvid.com/#1x85b"></textarea>
-    <button onclick="generar()">🚀 Generar Página </button>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
+    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace de VidHide..."></textarea>
+    <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión ultra compatible con cubeembed y rpmvid</small>
+    <small>Versión ultra compatible con VidHide (sin romper el reproductor)</small>
 </div>
 
 <script>
@@ -59,17 +59,17 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza suave
+    // Limpieza muy suave (no tocamos casi nada)
     doc.querySelectorAll('noscript, iframe[src*="ad"], embed, object, frame').forEach(el => el.remove());
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.tag'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
-    // CSS Pantalla Completa
+    // CSS Pantalla Completa (esto es lo más importante)
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
         html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
@@ -77,7 +77,7 @@ async function generar() {
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups ULTRA SIMPLE (sin errores de sintaxis)
+    // Anti-popups MÍNIMO posible (evita errores de sintaxis)
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
         window.open = function(){ return null; };
@@ -85,11 +85,8 @@ async function generar() {
         window.confirm = function(){};
         window.prompt = function(){};
         document.addEventListener('click', function(e){
-            if (e.target.tagName === 'A' || (e.target.closest && e.target.closest('a'))) {
-                e.preventDefault();
-            }
+            if (e.target.tagName === 'A' || (e.target.closest && e.target.closest('a'))) e.preventDefault();
         }, true);
-        console.log('%c🛡️ Lz Protect Activado', 'color:#ffd700');
     `;
     doc.head.appendChild(antiScript);
 
@@ -98,12 +95,12 @@ async function generar() {
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Página lista:</strong><br><br>
+        <strong>✅ Página lista para VidHide:</strong><br><br>
         <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba con https://cubeembed.rpmvid.com/#1x85b</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba tu enlace de VidHide ahora.</span>`;
 }
 </script>
 </body>
