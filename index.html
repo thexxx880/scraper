@@ -20,7 +20,7 @@ padding:25px;
 border-radius:14px;
 box-shadow:0 0 20px rgba(255,215,0,.15);
 }
-textarea,input{
+textarea,input,select{
 width:100%;
 padding:12px;
 margin-top:10px;
@@ -43,7 +43,7 @@ font-size:16px;
 small{
 color:#aaa;
 }
-#status { margin-top:10px; text-align:center; font-size:14px; }
+#status { margin-top:10px; text-align:center; font-size:14px; min-height:24px; }
 </style>
 </head>
 <body>
@@ -51,30 +51,28 @@ color:#aaa;
     <h2>🔐 Panel Lz Protect</h2>
     <textarea id="url" rows="4" placeholder="Pega aquí tu enlace... https://ejemplo.com"></textarea>
     
-    <select id="proxy" style="width:100%; margin-top:10px; padding:12px; background:#1c1c1c; color:#fff; border:none; border-radius:10px;">
-        <option value="https://corsproxy.io/?">corsproxy.io (recomendado)</option>
-        <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
-    </select>
-    
     <button onclick="generar()">🚀 Generar URL Protegida (Anti-Ads)</button>
     
     <input id="resultado" readonly placeholder="Tu URL protegida aparecerá aquí">
     <div id="status"></div>
     
-    <small>HTML limpio + Base64 + Bloqueo total de pop-ups, ads y trackers.<br>
-    Usa tu player.html en GitHub Pages o cualquier hosting.</small>
+    <small>Ahora con 6 proxies + fallback automático.<br>
+    Si sigue fallando, el sitio tiene protección fuerte (Cloudflare).</small>
 </div>
 
 <script>
-// Selectores de anuncios y elementos peligrosos
-const adSelectors = [
-    '[class*="ad"]', '[id*="ad"]', '.ads', '.advert', '.sponsor', '.promoted',
-    'iframe', 'embed', 'object', 'script', 'noscript', '[onclick]', '[onload]'
+// Lista de proxies actualizada 2026 (los más estables)
+const proxies = [
+    "https://api.allorigins.win/raw?url=",     // Muy estable
+    "https://corsproxy.io/?",                  // Rápido
+    "https://api.codetabs.com/v1/proxy?quest=", // Bueno contra bloqueos
+    "https://cors.bridged.cc/",                // Cloudflare friendly
+    "https://proxy.killcors.com/?url=",        // Nuevo y sin límites
+    "https://thingproxy.freeboard.io/fetch/"   // Clásico
 ];
 
 async function generar() {
     const urlInput = document.getElementById("url").value.trim();
-    const proxy = document.getElementById("proxy").value;
     const status = document.getElementById("status");
     
     if (!urlInput) {
@@ -82,62 +80,79 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffae00">⏳ Obteniendo y limpiando la página...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Intentando con proxies...</span>`;
+    document.getElementById("resultado").value = "";
 
-    const proxyUrl = proxy + encodeURIComponent(urlInput);
+    let html = null;
+    let usedProxy = "";
 
-    try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error("No se pudo obtener la página");
-
-        let html = await response.text();
-
-        // Parsear y limpiar
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-
-        // Eliminar scripts, iframes, ads...
-        doc.querySelectorAll('script, noscript, iframe, embed, object').forEach(el => el.remove());
+    // Intentar cada proxy hasta que funcione
+    for (let i = 0; i < proxies.length; i++) {
+        const proxy = proxies[i];
+        const fullUrl = proxy + encodeURIComponent(urlInput);
         
-        adSelectors.forEach(sel => {
-            doc.querySelectorAll(sel).forEach(el => {
-                if (el.tagName !== "BODY" && el.tagName !== "HTML") el.remove();
+        status.innerHTML = `<span style="color:#ffae00">🔄 Probando proxy ${i+1}/${proxies.length}...</span>`;
+
+        try {
+            const response = await fetch(fullUrl, { 
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
             });
-        });
 
-        // Eliminar atributos de eventos (onclick, onload, etc.)
-        doc.querySelectorAll('*').forEach(el => {
-            Array.from(el.attributes).forEach(attr => {
-                if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
-            });
-        });
-
-        // Inyectar protección anti-popups dentro del HTML limpio
-        const antiScript = doc.createElement('script');
-        antiScript.textContent = `
-            window.open = () => null;
-            window.alert = window.confirm = window.prompt = () => null;
-            document.addEventListener('click', e => {
-                if (e.target.tagName === 'A') e.preventDefault();
-            }, true);
-            console.log('%c🛡️ Lz Protect Activado - Sin ads ni pop-ups', 'color:#ffd700');
-        `;
-        doc.head.appendChild(antiScript);
-
-        // Convertir a Base64
-        const cleanHTML = new XMLSerializer().serializeToString(doc);
-        const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
-
-        // Generar URL final
-        const finalUrl = location.origin + location.pathname.replace("index.html", "player.html") + "?v=" + base64;
-        
-        document.getElementById("resultado").value = finalUrl;
-        status.innerHTML = `<span style="color:#ffd700">✅ ¡URL Protegida generada! Copia y usa en player.html</span>`;
-
-    } catch (e) {
-        console.error(e);
-        status.innerHTML = `<span style="color:#ff4444">❌ Error: ${e.message}. Prueba otro proxy.</span>`;
+            if (response.ok) {
+                html = await response.text();
+                usedProxy = proxy;
+                break; // ¡Éxito!
+            } else if (response.status === 403 || response.status === 429) {
+                console.log(`Proxy ${i+1} bloqueado (403/429)`);
+            }
+        } catch (e) {
+            console.log(`Proxy ${i+1} falló`);
+        }
     }
+
+    if (!html) {
+        status.innerHTML = `<span style="color:#ff4444">❌ Todos los proxies fallaron (403).<br>El sitio tiene protección anti-scraper fuerte.</span>`;
+        return;
+    }
+
+    status.innerHTML = `<span style="color:#ffd700">✅ Usando ${usedProxy.split('/')[2]} → Limpiando...</span>`;
+
+    // === LIMPIEZA AGRESIVA (igual que antes) ===
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    doc.querySelectorAll('script, noscript, iframe, embed, object, frame').forEach(el => el.remove());
+    
+    const adSelectors = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','[onclick]','[onload]'];
+    adSelectors.forEach(sel => {
+        doc.querySelectorAll(sel).forEach(el => {
+            if (el.tagName !== "BODY" && el.tagName !== "HTML") el.remove();
+        });
+    });
+
+    doc.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+        });
+    });
+
+    // Anti-popups dentro del HTML limpio
+    const antiScript = doc.createElement('script');
+    antiScript.textContent = `
+        window.open = () => null;
+        window.alert = window.confirm = window.prompt = () => null;
+        document.addEventListener('click', e => { if(e.target.tagName==='A') e.preventDefault(); }, true);
+        console.log('%c🛡️ Lz Protect Activado', 'color:#ffd700');
+    `;
+    doc.head.appendChild(antiScript);
+
+    const cleanHTML = new XMLSerializer().serializeToString(doc);
+    const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
+
+    const finalUrl = location.origin + location.pathname.replace("index.html", "player.html") + "?v=" + base64;
+    
+    document.getElementById("resultado").value = finalUrl;
+    status.innerHTML = `<span style="color:#00ff00">✅ ¡URL Protegida lista! (Proxy: ${usedProxy.split('/')[2]})</span>`;
 }
 </script>
 </body>
