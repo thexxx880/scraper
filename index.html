@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Lz Protect - Ultra Ligero</title>
+<title>Panel Lz Protect</title>
 <style>
 body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
@@ -16,20 +16,23 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect - Ultra Ligero</h2>
-    <textarea id="url" rows="3" placeholder="Pega tu enlace de VidHide aquí"></textarea>
-    <button onclick="generar()">🚀 Generar (Mínimo posible)</button>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
+    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
+    <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión con limpieza casi nula + solo pantalla completa</small>
+    <small>Video en pantalla completa + anti-ads y anti-popups</small>
 </div>
 
 <script>
+// Proxies
 const proxies = [
     "https://corsproxy.io/?",
     "https://api.allorigins.win/raw?url=",
     "https://api.codetabs.com/v1/proxy?quest=",
-    "https://thingproxy.freeboard.io/fetch/"
+    "https://thingproxy.freeboard.io/fetch/",
+    "https://cors.bridged.cc/",
+    "https://proxy.killcors.com/?url="
 ];
 
 async function generar() {
@@ -37,7 +40,7 @@ async function generar() {
     const status = document.getElementById("status");
     if (!urlInput) return alert("❌ Pega un enlace válido");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Cargando página...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo página...</span>`;
     document.getElementById("resultado").innerHTML = "";
 
     let html = null;
@@ -52,42 +55,78 @@ async function generar() {
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ No se pudo cargar la página.</span>`;
+        status.innerHTML = `<span style="color:red">❌ No se pudo obtener la página.</span>`;
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">Solo aplicando pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando a pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // NO eliminamos casi nada (solo ads muy obvios)
-    doc.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.advert,.sponsor,.promoted,.popup').forEach(el => el.remove());
+    // Limpieza
+    doc.querySelectorAll('noscript, iframe, embed, object, frame').forEach(el => el.remove());
+    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
+    ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
-    // Solo CSS de pantalla completa
+    // Eliminar eventos peligrosos
+    doc.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+        });
+    });
+
+    // === CSS PARA PANTALLA COMPLETA ===
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
-        html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
-        video, iframe, .video, [class*="player"], [id*="player"], #vplayer {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100% !important;
+            width: 100% !important;
+            overflow: hidden !important;
+            background: #000 !important;
+        }
+        video, .video, [class*="player"], [id*="player"] {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain !important;
+            background: #000 !important;
+        }
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups mínimo absoluto
-    const anti = doc.createElement('script');
-    anti.textContent = `window.open=function(){return null;};`;
-    doc.head.appendChild(anti);
+    // Anti-popups
+    const antiScript = doc.createElement('script');
+    antiScript.textContent = `
+        window.open = () => null;
+        window.alert = window.confirm = window.prompt = () => null;
+        Object.defineProperty(window, 'location', {set: () => {}});
+        document.addEventListener('click', e => {
+            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
+        }, true);
+        new MutationObserver(() => {
+            document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
+        }).observe(document.body, {childList:true, subtree:true});
+    `;
+    doc.head.appendChild(antiScript);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Enlace listo:</strong><br><br>
+        <strong>✅ Página lista en pantalla completa:</strong><br><br>
         <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
+        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">El video ocupará toda la pantalla</p>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ Listo. Prueba con https://dhtpre.com/embed/xzgds6v30wet</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace para ver el video en pantalla completa.</span>`;
 }
 </script>
 </body>
