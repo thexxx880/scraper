@@ -17,15 +17,15 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 <body>
 <div class="box">
     <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
-    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
+    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx o cualquier otro host"></textarea>
     <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Video en pantalla completa + anti-ads y anti-popups</small>
+    <small>Video en pantalla completa + anti-ads y anti-popups (compatible con más hosts)</small>
 </div>
 
 <script>
-// Proxies
+// Proxies (puedes añadir más si quieres)
 const proxies = [
     "https://corsproxy.io/?",
     "https://api.allorigins.win/raw?url=",
@@ -34,6 +34,29 @@ const proxies = [
     "https://cors.bridged.cc/",
     "https://proxy.killcors.com/?url="
 ];
+
+// Función para extraer enlaces directos de video (.mp4, .m3u8, etc.)
+function extraerVideoDirecto(html) {
+    // Regex mejorado: busca URLs de video reales (evita thumbs, banners, logos, etc.)
+    const regex = /https?:\/\/[^"\s'<>]+?\.(mp4|m3u8|webm|ts|mov)(?:\?[^"\s'<>]*)?/gi;
+    let matches = html.match(regex) || [];
+
+    // Filtramos candidatos más probables (más largos y sin palabras de anuncio)
+    matches = matches.filter(url => {
+        const lower = url.toLowerCase();
+        return url.length > 60 &&
+               !lower.includes('thumb') &&
+               !lower.includes('preview') &&
+               !lower.includes('banner') &&
+               !lower.includes('logo') &&
+               !lower.includes('ad') &&
+               !lower.includes('sponsor');
+    });
+
+    // Devolvemos el primero más largo (suele ser el principal)
+    if (matches.length === 0) return null;
+    return matches.sort((a, b) => b.length - a.length)[0];
+}
 
 async function generar() {
     const urlInput = document.getElementById("url").value.trim();
@@ -59,14 +82,74 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando a pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🔍 Buscando video directo...</span>`;
+
+    // === 1. INTENTAR EXTRAER VIDEO DIRECTO (método más estable) ===
+    const videoDirecto = extraerVideoDirecto(html);
+    
+    if (videoDirecto) {
+        // Generamos un reproductor HTML5 limpio y completo (sin scripts externos)
+        const cleanHTML = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Limpio - Lz Protect</title>
+    <style>
+        html, body {margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:#000;}
+        video {
+            width:100vw !important;
+            height:100vh !important;
+            object-fit:contain !important;
+            background:#000;
+        }
+        .controls {position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);padding:8px 20px;border-radius:50px;color:white;z-index:9999;font-size:14px;}
+    </style>
+</head>
+<body>
+    <video id="player" controls autoplay playsinline>
+        <source src="${videoDirecto}" type="video/mp4">
+        <source src="${videoDirecto}" type="application/x-mpegURL">
+    </video>
+    <script>
+        // Anti-popups y anti-redirecciones
+        window.open = () => null;
+        window.alert = window.confirm = window.prompt = () => null;
+        document.addEventListener('click', e => {
+            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
+        }, true);
+        // Auto-play en móviles
+        const video = document.getElementById('player');
+        video.volume = 0.8;
+        video.play().catch(() => {});
+    <\/script>
+</body>
+</html>`;
+
+        const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
+        const dataUrl = "data:text/html;base64," + base64;
+
+        document.getElementById("resultado").innerHTML = `
+            <strong>✅ Video directo encontrado:</strong><br>
+            <small>${videoDirecto}</small><br><br>
+            <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;font-size:15px;">▶ Abrir Video en Pantalla Completa (Limpio)</a><br><br>
+            <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:12px 24px;border-radius:8px;cursor:pointer;">📋 Copiar Enlace</button>
+            <p style="font-size:12px;color:#aaa;margin-top:10px;">Reproductor HTML5 nativo • Sin anuncios • Sin popups • Compatible con la mayoría de hosts</p>
+        `;
+        status.innerHTML = `<span style="color:lime">✅ ¡Listo! Video directo detectado.</span>`;
+        return;
+    }
+
+    // === 2. FALLBACK: Limpieza agresiva (para cuando no se detecta video directo) ===
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando página completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza
-    doc.querySelectorAll('noscript, iframe, embed, object, frame').forEach(el => el.remove());
-    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
+    // Limpieza agresiva
+    doc.querySelectorAll('noscript, iframe, embed, object, frame, script, link[rel="stylesheet"], style').forEach(el => el.remove());
+    
+    // Eliminar anuncios por selectores comunes
+    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.player-ad','[class*="cookie"]'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
     // Eliminar eventos peligrosos
@@ -76,57 +159,48 @@ async function generar() {
         });
     });
 
-    // === CSS PARA PANTALLA COMPLETA ===
+    // CSS pantalla completa + video forzado
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
-        html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 100% !important;
-            width: 100% !important;
-            overflow: hidden !important;
-            background: #000 !important;
-        }
-        video, .video, [class*="player"], [id*="player"] {
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: contain !important;
-            background: #000 !important;
-        }
-        * {
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+        html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
+        video, .video, [class*="player"], [id*="player"], iframe {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
+        * {margin:0!important;padding:0!important;}
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups
+    // Anti-popups + mock de jQuery (para evitar errores en algunos hosts)
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
         window.open = () => null;
         window.alert = window.confirm = window.prompt = () => null;
         Object.defineProperty(window, 'location', {set: () => {}});
+        
+        // Mock jQuery básico para evitar errores comunes
+        window.jQuery = window.$ = function() { return { tooltip: function(){}, cookie: function(){} }; };
+        $.fn = $.prototype = { tooltip: function(){} };
+        
         document.addEventListener('click', e => {
             if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
         }, true);
+        
+        // Auto-remover anuncios dinámicos
         new MutationObserver(() => {
             document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
         }).observe(document.body, {childList:true, subtree:true});
     `;
     doc.head.appendChild(antiScript);
 
+    // Generar data URL
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Página lista en pantalla completa:</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
+        <strong>✅ Página limpia generada (fallback):</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
-        <p style="font-size:12px;color:#aaa;margin-top:8px;">El video ocupará toda la pantalla</p>
     `;
-
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace para ver el video en pantalla completa.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! (Modo fallback activado)</span>`;
 }
 </script>
 </body>
