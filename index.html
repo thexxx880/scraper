@@ -108,7 +108,7 @@ body{padding:10px;}
 </div>
 
 <script>
-// === PROXIES MEJORADOS (más opciones = más compatibilidad) ===
+// === PROXIES MEJORADOS ===
 const proxies = [
     "https://api.allorigins.win/raw?url=",
     "https://corsproxy.io/?",
@@ -122,8 +122,6 @@ const proxies = [
 function extraerVideoDirecto(html) {
     const regex = /https?:\/\/[^"\s'<>]+?\.(mp4|m3u8|webm|ts|mov)(?:\?[^"\s'<>]*)?/gi;
     let matches = html.match(regex) || [];
-    
-    // Filtramos los más probables (evitamos thumbs, banners, logos, etc.)
     matches = matches.filter(url => {
         const lower = url.toLowerCase();
         return url.length > 70 &&
@@ -135,9 +133,7 @@ function extraerVideoDirecto(html) {
                !lower.includes('sponsor') &&
                !lower.includes('icon');
     });
-    
     if (matches.length === 0) return null;
-    // Devolvemos el más largo (normalmente es el video principal)
     return matches.sort((a, b) => b.length - a.length)[0];
 }
 
@@ -172,7 +168,7 @@ async function generar() {
 
     status.innerHTML = "🔍 Buscando video directo...";
 
-    // === 1. INTENTO PRINCIPAL: VIDEO DIRECTO ===
+    // === 1. VIDEO DIRECTO (método más estable) ===
     const videoDirecto = extraerVideoDirecto(html);
 
     if (videoDirecto) {
@@ -221,15 +217,22 @@ video.play().catch(function(){});
         return;
     }
 
-    // === 2. FALLBACK: Limpieza completa de la página ===
-    status.innerHTML = "🧹 No encontré video directo → Limpiando página completa...";
+    // === 2. FALLBACK: Limpieza completa (con correcciones a tus errores) ===
+    status.innerHTML = "🧹 Limpiando página completa...";
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza agresiva
-    doc.querySelectorAll('noscript, iframe, embed, object, frame, script, link[rel="stylesheet"], style').forEach(el => el.remove());
+    // Limpieza AGRESIVA (incluye los dos errores que reportaste)
+    doc.querySelectorAll('noscript, iframe, embed, object, frame, script, link[rel="stylesheet"], style, form').forEach(el => el.remove());
     
+    // Eliminar TODOS los formularios y action (causaba el Mixed Content)
+    doc.querySelectorAll('*').forEach(el => {
+        if (el.tagName === 'FORM') el.remove();
+        if (el.hasAttribute('action')) el.removeAttribute('action');
+        if (el.hasAttribute('formaction')) el.removeAttribute('formaction');
+    });
+
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.player-ad','[class*="cookie"]'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
@@ -249,19 +252,27 @@ video,.video,[class*="player"],[id*="player"]{width:100vw!important;height:100vh
 `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups + mock jQuery (sin arrow functions)
+    // Anti-popups MEJORADO (sin error de "Cannot redefine property: location")
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
 window.open=function(){return null;};
 window.alert=function(){return null;};
 window.confirm=function(){return null;};
 window.prompt=function(){return null;};
-Object.defineProperty(window,'location',{set:function(){}});
-window.jQuery=window.$=function(){return{tooltip:function(){},cookie:function(){}}};
-$.fn=$.prototype={tooltip:function(){}};
+
+// Bloqueo seguro de location (con try/catch para evitar tu error)
+try {
+    Object.defineProperty(window, 'location', {set: function(){}});
+} catch(e) {}
+
+// Mock jQuery (evita errores en uqload y similares)
+window.jQuery = window.$ = function(){ return { tooltip: function(){}, cookie: function(){} }; };
+$.fn = $.prototype = { tooltip: function(){} };
+
 document.addEventListener('click',function(e){
 if(e.target.tagName==='A'||e.target.closest('a'))e.preventDefault();
 },true);
+
 new MutationObserver(function(){
 document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(function(el){el.remove();});
 }).observe(document.body,{childList:true,subtree:true});
@@ -276,12 +287,12 @@ document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(func
 <b>✅ Página limpia generada (fallback)</b><br><br>
 <a href="${link}" target="_blank" style="font-size:16px;">▶ Abrir en Pantalla Completa</a><br>
 <button class="copyBtn" onclick="copiar('${link}',this)">📋 Copiar enlace</button>
-<p style="font-size:13px;color:#aaa;margin-top:10px;">Modo completo • Anti-ads • Anti-popups • Anti-jQuery errors</p>
+<p style="font-size:13px;color:#aaa;margin-top:10px;">Anti-ads • Anti-popups • Anti-forms • Sin errores</p>
 `;
     status.innerHTML = "✅ ¡Listo! (Modo fallback)";
 }
 
-// Función copiar (mejorada)
+// Copiar mejorado
 function copiar(texto, btn) {
     navigator.clipboard.writeText(texto).then(() => {
         const original = btn.innerHTML;
