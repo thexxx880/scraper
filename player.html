@@ -20,7 +20,7 @@ border:none;
 </head>
 <body>
 <iframe id="frame"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+        sandbox="allow-scripts allow-forms allow-presentation"
         referrerpolicy="no-referrer"
         allowfullscreen>
 </iframe>
@@ -33,7 +33,6 @@ function getParam(name) {
 try {
     const code = getParam("v");
     if (code) {
-        // Cargamos el HTML LIMPIO directamente con data: URL (más seguro y rápido)
         const dataUrl = "data:text/html;base64," + code;
         document.getElementById("frame").src = dataUrl;
     } else {
@@ -43,7 +42,7 @@ try {
     document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:40px">❌ Error al decodificar</h2>`;
 }
 
-// Protecciones extras en el reproductor
+// Protecciones extras
 window.open = function() { return null; };
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
