@@ -21,7 +21,7 @@ border-radius:14px;
 box-shadow:0 0 30px rgba(255,215,0,.3);
 border:1px solid #ffd700;
 }
-textarea,input,select{
+textarea,input{
 width:100%;
 padding:12px;
 margin-top:10px;
@@ -29,10 +29,11 @@ border:none;
 border-radius:10px;
 background:#1c1c1c;
 color:#fff;
+font-size:16px;
 }
 button{
 width:100%;
-padding:14px;
+padding:16px;
 margin-top:15px;
 border:none;
 border-radius:10px;
@@ -40,19 +41,25 @@ background:linear-gradient(90deg,#ffd700,#ffae00);
 color:#000;
 font-weight:bold;
 cursor:pointer;
-font-size:17px;
+font-size:18px;
 box-shadow:0 4px 15px rgba(255,215,0,.4);
 }
 button:hover{
 transform:scale(1.03);
 }
-small{
-color:#aaa;
-}
-#status { margin-top:10px; text-align:center; font-size:14px; min-height:24px; }
 #resultado{
 margin-top:10px;
 font-size:15px;
+padding:12px;
+background:#1c1c1c;
+border-radius:10px;
+word-break:break-all;
+}
+small{
+color:#aaa;
+display:block;
+margin-top:15px;
+text-align:center;
 }
 </style>
 </head>
@@ -60,99 +67,42 @@ font-size:15px;
 <div class="box">
     <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
     
-    <textarea id="url" rows="4" placeholder="Pega aquí tu enlace... https://ejemplo.com"></textarea>
+    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
     
-    <button onclick="generar()">🚀 Generar URL Protegida (Anti-Ads)</button>
+    <button onclick="generar()">🚀 Generar URL Protegida</button>
     
-    <input id="resultado" readonly placeholder="Tu URL protegida aparecerá aquí">
+    <div id="resultado" style="display:none;"></div>
     
-    <div id="status"></div>
-    
-    <small>✅ Ahora detecta automáticamente la carpeta y el nombre de tu archivo.<br>
-    Funciona aunque lo llames scraper.html, panel.html o lo tengas en /scraper/</small>
+    <small>El enlace se cargará dentro de player.html con sandbox (anti-popups y ads)</small>
 </div>
 
 <script>
-// Lista de proxies (muy estables en 2026)
-const proxies = [
-    "https://api.allorigins.win/raw?url=",
-    "https://corsproxy.io/?",
-    "https://api.codetabs.com/v1/proxy?quest=",
-    "https://cors.bridged.cc/",
-    "https://proxy.killcors.com/?url=",
-    "https://thingproxy.freeboard.io/fetch/"
-];
-
-async function generar() {
-    const urlInput = document.getElementById("url").value.trim();
-    const status = document.getElementById("status");
-    
-    if (!urlInput) {
+function generar() {
+    let url = document.getElementById("url").value.trim();
+    if (!url) {
         alert("❌ Pega un enlace válido");
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Buscando proxy que funcione...</span>`;
-    document.getElementById("resultado").value = "";
-
-    let html = null;
-    let usedProxy = "";
-
-    for (let proxy of proxies) {
-        const fullUrl = proxy + encodeURIComponent(urlInput);
-        status.innerHTML = `<span style="color:#ffae00">🔄 Probando proxy...</span>`;
-
-        try {
-            const response = await fetch(fullUrl, {
-                headers: { "User-Agent": "Mozilla/5.0" }
-            });
-            if (response.ok) {
-                html = await response.text();
-                usedProxy = proxy;
-                break;
-            }
-        } catch (e) {}
-    }
-
-    if (!html) {
-        status.innerHTML = `<span style="color:#ff4444">❌ Todos los proxies fallaron (403).<br>El sitio tiene protección fuerte (Cloudflare).</span>`;
-        return;
-    }
-
-    status.innerHTML = `<span style="color:#ffd700">✅ Página obtenida → Limpiando ads...</span>`;
-
-    // LIMPIEZA AGRESIVA
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    doc.querySelectorAll('script, noscript, iframe, embed, object, frame').forEach(el => el.remove());
+    // Codificamos la URL para que pueda ir por GET
+    let encoded = encodeURIComponent(url);
     
-    const adSelectors = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','[onclick]','[onload]'];
-    adSelectors.forEach(sel => {
-        doc.querySelectorAll(sel).forEach(el => {
-            if (el.tagName !== "BODY" && el.tagName !== "HTML") el.remove();
-        });
+    // Genera la URL que pasa por player.html
+    let finalUrl = location.origin + location.pathname.replace(/[^/]*$/, "player.html") + "?url=" + encoded;
+
+    let res = document.getElementById("resultado");
+    res.style.display = "block";
+    res.innerHTML = `
+        <strong>✅ Tu URL Protegida:</strong><br>
+        <a href="${finalUrl}" target="_blank" style="color:#ffd700; text-decoration:underline;">${finalUrl}</a><br><br>
+        <button onclick="copiar('${finalUrl}')" style="background:#222; color:#ffd700; width:auto; padding:8px 20px; font-size:14px;">📋 Copiar URL</button>
+    `;
+}
+
+function copiar(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        alert("✅ URL copiada al portapapeles");
     });
-
-    doc.querySelectorAll('*').forEach(el => {
-        Array.from(el.attributes).forEach(attr => {
-            if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
-        });
-    });
-
-    const antiScript = doc.createElement('script');
-    antiScript.textContent = `window.open=()=>null;window.alert=window.confirm=window.prompt=()=>null;document.addEventListener('click',e=>{if(e.target.tagName==='A')e.preventDefault();},true);console.log('%c🛡️ Lz Protect Activado','color:#ffd700');`;
-    doc.head.appendChild(antiScript);
-
-    const cleanHTML = new XMLSerializer().serializeToString(doc);
-    const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
-
-    // === AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE ===
-    const playerPath = location.pathname.replace(/[^/]*$/, "player.html");
-    const finalUrl = location.origin + playerPath + "?v=" + base64;
-
-    document.getElementById("resultado").value = finalUrl;
-    status.innerHTML = `<span style="color:#00ff00">✅ ¡URL lista! Copia y ábrela</span>`;
 }
 </script>
 </body>
