@@ -11,27 +11,30 @@ textarea,input{width:100%;padding:12px;margin-top:10px;border:none;border-radius
 button{width:100%;padding:16px;margin-top:15px;border:none;border-radius:10px;background:linear-gradient(90deg,#ffd700,#ffae00);color:#000;font-weight:bold;cursor:pointer;font-size:18px;}
 #resultado{margin-top:15px;padding:12px;background:#1c1c1c;border-radius:10px;word-break:break-all;font-size:14px;}
 small{color:#aaa;display:block;margin-top:15px;text-align:center;}
-#status{margin-top:10px;text-align:center;font-size:14px;}
+#status{margin-top:10px;text-align:center;font-size:14px;min-height:28px;}
 </style>
 </head>
 <body>
 <div class="box">
     <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
     <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
-    <button onclick="generar()">🚀 Generar URL Protegida (Anti-Ads + Anti-Popups)</button>
+    <button onclick="generar()">🚀 Generar URL Protegida (Anti-Ads)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Ahora limpia ads y bloquea pop-ups antes de cargar</small>
+    <small>Ahora con 8 proxies + limpieza suave (para que no se ponga negro el video)</small>
 </div>
 
 <script>
-// Proxies más estables 2026
+// 🔥 Lista de proxies ACTUALIZADA 2026 (más resistente)
 const proxies = [
-    "https://api.allorigins.win/raw?url=",
     "https://corsproxy.io/?",
+    "https://api.allorigins.win/raw?url=",
+    "https://proxy.cors.sh/",
     "https://api.codetabs.com/v1/proxy?quest=",
+    "https://thingproxy.freeboard.io/fetch/",
     "https://cors.bridged.cc/",
-    "https://proxy.killcors.com/?url="
+    "https://proxy.killcors.com/?url=",
+    "https://corsfix.com/proxy/"   // nuevo
 ];
 
 async function generar() {
@@ -39,54 +42,60 @@ async function generar() {
     const status = document.getElementById("status");
     if (!urlInput) return alert("❌ Pega un enlace");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Buscando proxy...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Probando proxies (puede tardar unos segundos)...</span>`;
     document.getElementById("resultado").innerHTML = "";
 
     let html = null;
+    let proxyUsado = "";
+
     for (let proxy of proxies) {
         try {
-            const res = await fetch(proxy + encodeURIComponent(urlInput));
+            const res = await fetch(proxy + encodeURIComponent(urlInput), {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+            });
             if (res.ok) {
                 html = await res.text();
+                proxyUsado = proxy;
                 break;
             }
         } catch(e) {}
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ No se pudo obtener la página (intenta otro enlace)</span>`;
+        status.innerHTML = `<span style="color:red">❌ Todos los proxies fueron bloqueados por Cloudflare.<br>Prueba con otro enlace o usa el modo rápido abajo.</span>`;
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando ads y pop-ups...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">✅ Página obtenida con ${proxyUsado.split('/')[2]} → Limpiando ads...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza agresiva
-    doc.querySelectorAll('script, noscript, iframe, embed, object, frame, .ad, [class*="ad"], [id*="ad"], .ads, .advert, .sponsor').forEach(el => el.remove());
+    // Limpieza SUAVE (no borramos scripts para que el video funcione)
+    const adSelectors = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','[class*="banner"]'];
+    adSelectors.forEach(sel => {
+        doc.querySelectorAll(sel).forEach(el => el.remove());
+    });
 
-    // Eliminar eventos onclick, onload, etc.
+    // Solo eliminamos eventos peligrosos
     doc.querySelectorAll('*').forEach(el => {
         Array.from(el.attributes).forEach(attr => {
             if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
         });
     });
 
-    // Inyectar protección ULTRA agresiva dentro de la página
+    // Anti-popups + anti-ads agresivo dentro de la página
     const anti = doc.createElement('script');
     anti.textContent = `
-        window.open = function(){ return null; };
-        window.alert = window.confirm = window.prompt = function(){ return null; };
-        Object.defineProperty(window, 'location', {set: function(){}});
-        document.addEventListener('click', function(e){
-            if(e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
+        window.open = () => null;
+        window.alert = window.confirm = window.prompt = () => null;
+        document.addEventListener('click', e => {
+            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
         }, true);
-        console.log('%c🛡️ Lz Protect FULL ACTIVADO - Sin ads ni pop-ups', 'color:#ffd700;font-size:12px');
-        // Observer para eliminar ads que se carguen después
         new MutationObserver(() => {
             document.querySelectorAll('.ad,[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
         }).observe(document.body, {childList:true, subtree:true});
+        console.log('%c🛡️ Lz Protect Activado (ads y pop-ups bloqueados)', 'color:#ffd700');
     `;
     doc.head.appendChild(anti);
 
@@ -97,10 +106,10 @@ async function generar() {
 
     document.getElementById("resultado").innerHTML = `
         <strong>✅ URL Protegida:</strong><br>
-        <a href="${playerUrl}" target="_blank" style="color:#ffd700">${playerUrl}</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${playerUrl}');alert('✅ Copiado!')" style="background:#222;color:#ffd700;padding:8px 16px">📋 Copiar URL</button>
+        <a href="${playerUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">${playerUrl}</a><br><br>
+        <button onclick="navigator.clipboard.writeText('${playerUrl}');this.textContent='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
     `;
-    status.innerHTML = `<span style="color:lime">✅ Listo - Ads y pop-ups bloqueados</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba la URL (ads y pop-ups deberían estar bloqueados)</span>`;
 }
 </script>
 </body>
