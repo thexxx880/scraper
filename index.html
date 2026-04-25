@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Lz Protect + Plyr</title>
+<title>Panel Lz Protect </title>
 <style>
 body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
@@ -21,11 +21,11 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
     <button onclick="generar()">🚀 Generar con Plyr (Adelantar/Retroceder 10s)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Ahora incluye Plyr.io con controles profesionales + flechas ← → para 10 segundos</small>
+    <small>Controles profesionales + flechas ← → del teclado para ±10 segundos</small>
 </div>
 
 <script>
-// Proxies más resistentes
+// Proxies
 const proxies = [
     "https://corsproxy.io/?",
     "https://api.allorigins.win/raw?url=",
@@ -40,7 +40,7 @@ async function generar() {
     const status = document.getElementById("status");
     if (!urlInput) return alert("❌ Pega un enlace válido");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Intentando obtener la página...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo página...</span>`;
     document.getElementById("resultado").innerHTML = "";
 
     let html = null;
@@ -55,16 +55,16 @@ async function generar() {
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ Cloudflare bloqueó todos los proxies.<br>Prueba con otro enlace o avísame.</span>`;
+        status.innerHTML = `<span style="color:red">❌ Cloudflare bloqueó todos los proxies.</span>`;
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + Inyectando Plyr Player...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + añadiendo Plyr...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza (mantengo los elementos del video)
+    // Limpieza suave
     doc.querySelectorAll('noscript, iframe, embed, object, frame').forEach(el => el.remove());
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
@@ -76,7 +76,7 @@ async function generar() {
         });
     });
 
-    // === INYECTAR PLYR.IO ===
+    // === INYECTAR PLYR (corregido y simplificado) ===
     const plyrCSS = doc.createElement('link');
     plyrCSS.rel = 'stylesheet';
     plyrCSS.href = 'https://cdn.plyr.io/3.7.8/plyr.css';
@@ -86,61 +86,55 @@ async function generar() {
     plyrJS.src = 'https://cdn.plyr.io/3.7.8/plyr.polyfilled.js';
     doc.body.appendChild(plyrJS);
 
-    // Script de inicialización de Plyr + controles +10s / -10s
-    const initPlyr = doc.createElement('script');
-    initPlyr.textContent = `
-        window.addEventListener('load', () => {
-            const videos = document.querySelectorAll('video');
+    // Script de inicialización (muy simplificado para evitar errores de sintaxis)
+    const initScript = doc.createElement('script');
+    initScript.textContent = `
+        function initPlyr() {
+            var videos = document.querySelectorAll('video');
             if (videos.length > 0) {
-                videos.forEach((video, index) => {
-                    const player = new Plyr(video, {
-                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
-                        settings: ['quality', 'speed'],
-                        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
-                        keyboard: { enabled: true, global: true }
+                videos.forEach(function(video) {
+                    var player = new Plyr(video, {
+                        controls: ['play-large','play','progress','current-time','duration','mute','volume','settings','pip','fullscreen'],
+                        settings: ['speed'],
+                        speed: {selected:1, options:[0.5,0.75,1,1.25,1.5,2]}
                     });
 
-                    // Atajos de teclado: Flecha derecha = +10s | Flecha izquierda = -10s
-                    document.addEventListener('keydown', e => {
+                    // Atajos teclado +10s / -10s
+                    document.addEventListener('keydown', function(e) {
                         if (e.key === "ArrowRight") player.currentTime += 10;
-                        if (e.key === "ArrowLeft") player.currentTime -= 10;
+                        if (e.key === "ArrowLeft")  player.currentTime -= 10;
                     });
-
-                    console.log('%c🎥 Plyr Player ' + (index+1) + ' activado con +10s / -10s', 'color:#ffd700;font-size:14px');
                 });
+                console.log('%c🎥 Plyr Player cargado correctamente', 'color:#ffd700');
             }
-        });
+        }
+        // Esperar a que Plyr se cargue
+        var checkPlyr = setInterval(function() {
+            if (typeof Plyr !== 'undefined') {
+                clearInterval(checkPlyr);
+                initPlyr();
+            }
+        }, 300);
     `;
-    doc.body.appendChild(initPlyr);
+    doc.body.appendChild(initScript);
 
-    // Anti-popups ultra fuerte
-    const antiScript = doc.createElement('script');
-    antiScript.textContent = `
-        window.open = () => null;
-        window.alert = window.confirm = window.prompt = () => null;
-        Object.defineProperty(window, 'location', {set: () => {}});
-        document.addEventListener('click', e => {
-            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
-        }, true);
-        new MutationObserver(() => {
-            document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
-        }).observe(document.body, {childList:true, subtree:true});
-    `;
-    doc.head.appendChild(antiScript);
+    // Anti-popups
+    const anti = doc.createElement('script');
+    anti.textContent = `window.open=()=>null;window.alert=window.confirm=window.prompt=()=>null;document.addEventListener('click',function(e){if(e.target.tagName==='A')e.preventDefault();},true);`;
+    doc.head.appendChild(anti);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
-    // Mostrar resultado
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Página con Plyr Player lista:</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">▶ Abrir Video con Plyr</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar data: URL</button>
-        <p style="font-size:12px;margin-top:10px;color:#aaa;">Usa las flechas del teclado ← → para adelantar/retroceder 10 segundos</p>
+        <strong>✅ Video con Plyr listo:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700">▶ Abrir con Plyr Player</a><br><br>
+        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">Usa las flechas del teclado ← → para adelantar o retroceder 10 segundos</p>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace y disfruta del reproductor Plyr</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Si no ves el player, desactiva el adblocker temporalmente en esta pestaña.</span>`;
 }
 </script>
 </body>
