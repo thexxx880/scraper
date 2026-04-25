@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reproductor Seguro</title>
+
+<style>
+html,body{
+margin:0;
+height:100%;
+background:#000;
+overflow:hidden;
+}
+
+iframe{
+width:100%;
+height:100%;
+border:none;
+}
+</style>
+</head>
+<body>
+
+<iframe id="frame"
+sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+referrerpolicy="no-referrer"
+allowfullscreen>
+</iframe>
+
+<script>
+function getParam(name){
+let p = new URLSearchParams(location.search);
+return p.get(name);
+}
+
+try{
+let code = getParam("v");
+
+if(code){
+let url = decodeURIComponent(escape(atob(code)));
+
+document.getElementById("frame").src = url;
+}
+}catch(e){
+document.body.innerHTML="<h2 style='color:white;text-align:center'>Error</h2>";
+}
+
+/* Protección local */
+window.open = function(){ return null; };
+
+document.addEventListener("contextmenu", e=>e.preventDefault());
+
+document.addEventListener("click", function(e){
+if(e.target.tagName==="A"){
+e.preventDefault();
+}
+}, true);
+</script>
+
+</body>
+</html>
