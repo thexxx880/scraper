@@ -16,23 +16,20 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect - Modo VidHide</h2>
-    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace de VidHide..."></textarea>
-    <button onclick="generar()">🚀 Generar (Limpieza Mínima + Pantalla Completa)</button>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect - VidHide</h2>
+    <textarea id="url" rows="3" placeholder="Pega tu enlace de VidHide aquí"></textarea>
+    <button onclick="generar()">🚀 Generar (Limpieza MÍNIMA)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión ultra-ligera para VidHide (mantiene jQuery y JW Player)</small>
+    <small>Versión ultra-ligera: solo pantalla completa</small>
 </div>
 
 <script>
-// Proxies
 const proxies = [
     "https://corsproxy.io/?",
     "https://api.allorigins.win/raw?url=",
     "https://api.codetabs.com/v1/proxy?quest=",
-    "https://thingproxy.freeboard.io/fetch/",
-    "https://cors.bridged.cc/",
-    "https://proxy.killcors.com/?url="
+    "https://thingproxy.freeboard.io/fetch/"
 ];
 
 async function generar() {
@@ -40,7 +37,7 @@ async function generar() {
     const status = document.getElementById("status");
     if (!urlInput) return alert("❌ Pega un enlace válido");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo página...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Cargando página...</span>`;
     document.getElementById("resultado").innerHTML = "";
 
     let html = null;
@@ -55,51 +52,43 @@ async function generar() {
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ No se pudo obtener la página.</span>`;
+        status.innerHTML = `<span style="color:red">❌ No se pudo cargar la página.</span>`;
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpieza mínima + pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">Ajustando a pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // LIMPIEZA MÍNIMA (solo ads obvios, NO tocamos scripts)
-    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.tag'];
+    // LIMPIEZA EXTREMADAMENTE LIGERA (solo ads visibles)
+    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
-    // CSS Pantalla Completa
+    // Solo CSS de pantalla completa
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
         html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
-        video, iframe, .video, [class*="player"], [id*="player"] {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
+        video, iframe, .video, [class*="player"], [id*="player"], #vplayer {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups MÍNIMO y seguro
-    const antiScript = doc.createElement('script');
-    antiScript.textContent = `
-        window.open = function(){ return null; };
-        window.alert = function(){};
-        window.confirm = function(){};
-        window.prompt = function(){};
-        document.addEventListener('click', function(e){
-            if (e.target.tagName === 'A' || (e.target.closest && e.target.closest('a'))) e.preventDefault();
-        }, true);
-    `;
-    doc.head.appendChild(antiScript);
+    // Anti-popups mínimo posible
+    const anti = doc.createElement('script');
+    anti.textContent = `window.open=function(){return null;};`;
+    doc.head.appendChild(anti);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ VidHide listo:</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
+        <strong>✅ Enlace VidHide listo:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba tu enlace de VidHide.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ Listo. Abre el enlace.</span>`;
 }
 </script>
 </body>
