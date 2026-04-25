@@ -9,7 +9,7 @@ body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
 textarea,input{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;background:#1c1c1c;color:#fff;font-size:16px;}
 button{width:100%;padding:16px;margin-top:15px;border:none;border-radius:10px;background:linear-gradient(90deg,#ffd700,#ffae00);color:#000;font-weight:bold;cursor:pointer;font-size:18px;}
-#resultado{margin-top:15px;padding:12px;background:#1c1c1c;border-radius:10px;word-break:break-all;font-size:14px;}
+#resultado{margin-top:15px;padding:12px;background:#1c1c1c;border-radius:10px;word-break:break-all;font-size:14px;max-height:400px;overflow:auto;}
 small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 #status{margin-top:10px;text-align:center;font-size:14px;}
 </style>
@@ -18,10 +18,10 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 <div class="box">
     <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect + Plyr</h2>
     <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
-    <button onclick="generar()">🚀 Generar URL con Plyr Player</button>
+    <button onclick="generar()">🚀 Generar URL Completa con Plyr</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>URL corta + Plyr (adelantar/retroceder 10s con flechas del teclado)</small>
+    <small>URL completa (data:) con Plyr + flechas ← → para ±10 segundos</small>
 </div>
 
 <script>
@@ -40,7 +40,7 @@ async function generar() {
     const status = document.getElementById("status");
     if (!urlInput) return alert("❌ Pega un enlace válido");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo y limpiando página...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo página...</span>`;
     document.getElementById("resultado").innerHTML = "";
 
     let html = null;
@@ -55,9 +55,11 @@ async function generar() {
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ No se pudo cargar la página.</span>`;
+        status.innerHTML = `<span style="color:red">❌ No se pudo obtener la página.</span>`;
         return;
     }
+
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + añadiendo Plyr...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
@@ -117,18 +119,17 @@ async function generar() {
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
+    const dataUrl = "data:text/html;base64," + base64;
 
-    // URL CORTA que apunta a player.html
-    const playerUrl = location.origin + location.pathname.replace(/[^/]*$/, "player.html") + "?v=" + base64;
-
+    // URL completa lista para copiar y pegar en cualquier navegador
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ URL lista para usar:</strong><br><br>
-        <a href="${playerUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">${playerUrl}</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${playerUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
-        <p style="font-size:12px;color:#aaa;">Pégala en cualquier navegador</p>
+        <strong>✅ Tu URL Completa lista:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video con Plyr</a><br><br>
+        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">Esta URL funciona en cualquier navegador y ya tiene Plyr incluido</p>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! URL corta generada.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Copia la URL y pégala donde quieras.</span>`;
 }
 </script>
 </body>
