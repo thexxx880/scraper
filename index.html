@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Lz Protect + Plyr</title>
+<title>Panel Lz Protect</title>
 <style>
 body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
@@ -16,12 +16,12 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect + Plyr</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
     <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
-    <button onclick="generar()">🚀 Generar URL Completa con Plyr</button>
+    <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>URL completa (data:) con Plyr + flechas ← → para ±10 segundos</small>
+    <small>Video en pantalla completa + anti-ads y anti-popups</small>
 </div>
 
 <script>
@@ -59,7 +59,7 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + añadiendo Plyr...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando a pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
@@ -76,60 +76,57 @@ async function generar() {
         });
     });
 
-    // Inyectar Plyr.io
-    const plyrCSS = doc.createElement('link');
-    plyrCSS.rel = 'stylesheet';
-    plyrCSS.href = 'https://cdn.plyr.io/3.7.8/plyr.css';
-    doc.head.appendChild(plyrCSS);
-
-    const plyrJS = doc.createElement('script');
-    plyrJS.src = 'https://cdn.plyr.io/3.7.8/plyr.polyfilled.js';
-    doc.body.appendChild(plyrJS);
-
-    const initScript = doc.createElement('script');
-    initScript.textContent = `
-        function initPlyr() {
-            var videos = document.querySelectorAll('video');
-            if (videos.length > 0) {
-                videos.forEach(function(video) {
-                    var player = new Plyr(video, {
-                        controls: ['play-large','play','progress','current-time','duration','mute','volume','settings','pip','fullscreen'],
-                        speed: {selected:1, options:[0.5,0.75,1,1.25,1.5,2]}
-                    });
-                    document.addEventListener('keydown', function(e) {
-                        if (e.key === "ArrowRight") player.currentTime += 10;
-                        if (e.key === "ArrowLeft")  player.currentTime -= 10;
-                    });
-                });
-            }
+    // === CSS PARA PANTALLA COMPLETA ===
+    const fullCSS = doc.createElement('style');
+    fullCSS.textContent = `
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100% !important;
+            width: 100% !important;
+            overflow: hidden !important;
+            background: #000 !important;
         }
-        var check = setInterval(function() {
-            if (typeof Plyr !== 'undefined') {
-                clearInterval(check);
-                initPlyr();
-            }
-        }, 300);
+        video, .video, [class*="player"], [id*="player"] {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain !important;
+            background: #000 !important;
+        }
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
     `;
-    doc.body.appendChild(initScript);
+    doc.head.appendChild(fullCSS);
 
     // Anti-popups
-    const anti = doc.createElement('script');
-    anti.textContent = `window.open=()=>null;window.alert=window.confirm=window.prompt=()=>null;document.addEventListener('click',function(e){if(e.target.tagName==='A')e.preventDefault();},true);`;
-    doc.head.appendChild(anti);
+    const antiScript = doc.createElement('script');
+    antiScript.textContent = `
+        window.open = () => null;
+        window.alert = window.confirm = window.prompt = () => null;
+        Object.defineProperty(window, 'location', {set: () => {}});
+        document.addEventListener('click', e => {
+            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
+        }, true);
+        new MutationObserver(() => {
+            document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
+        }).observe(document.body, {childList:true, subtree:true});
+    `;
+    doc.head.appendChild(antiScript);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
-    // URL completa lista para copiar y pegar en cualquier navegador
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Tu URL Completa lista:</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video con Plyr</a><br><br>
+        <strong>✅ Página lista en pantalla completa:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
-        <p style="font-size:12px;color:#aaa;margin-top:8px;">Esta URL funciona en cualquier navegador y ya tiene Plyr incluido</p>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">El video ocupará toda la pantalla</p>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Copia la URL y pégala donde quieras.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace para ver el video en pantalla completa.</span>`;
 }
 </script>
 </body>
