@@ -16,12 +16,12 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz </h2>
     <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://cubeembed.rpmvid.com/#1x85b"></textarea>
-    <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
+    <button onclick="generar()">🚀 Generar Página </button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión corregida para embeds difíciles (cubeembed, rpmvid, etc.)</small>
+    <small>Versión ultra compatible con cubeembed y rpmvid</small>
 </div>
 
 <script>
@@ -77,27 +77,18 @@ async function generar() {
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups MEJORADO (evita el error de "Cannot redefine property: location")
+    // Anti-popups ULTRA SIMPLE (sin errores de sintaxis)
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
-        try {
-            window.open = function(){ return null; };
-            window.alert = function(){};
-            window.confirm = function(){};
-            window.prompt = function(){};
-            // Protección de location más segura
-            if (typeof Object.defineProperty === 'function') {
-                try {
-                    Object.defineProperty(window, 'location', {
-                        set: function(){},
-                        configurable: true
-                    });
-                } catch(e) {}
+        window.open = function(){ return null; };
+        window.alert = function(){};
+        window.confirm = function(){};
+        window.prompt = function(){};
+        document.addEventListener('click', function(e){
+            if (e.target.tagName === 'A' || (e.target.closest && e.target.closest('a'))) {
+                e.preventDefault();
             }
-            document.addEventListener('click', function(e){
-                if(e.target.tagName === 'A' || e.target.closest && e.target.closest('a')) e.preventDefault();
-            }, true);
-        } catch(e) {}
+        }, true);
         console.log('%c🛡️ Lz Protect Activado', 'color:#ffd700');
     `;
     doc.head.appendChild(antiScript);
