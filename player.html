@@ -20,9 +20,9 @@ border:none;
 </head>
 <body>
 <iframe id="frame"
-        sandbox="allow-scripts allow-forms allow-presentation"
         referrerpolicy="no-referrer"
-        allowfullscreen>
+        allowfullscreen
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture">
 </iframe>
 
 <script>
@@ -42,9 +42,19 @@ try {
     document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ Error al cargar el enlace</h2>`;
 }
 
-// Protecciones extras
-window.open = function(){ return null; };
+// ==================== PROTECCIONES JS (sin sandbox) ====================
+window.open = function(){ return null; };           // Bloquea pop-ups
+window.alert = window.confirm = window.prompt = () => null;
+
+// Bloquea menú contextual
 document.addEventListener("contextmenu", e => e.preventDefault());
+
+// Bloquea algunos intentos de redirección
+document.addEventListener("click", function(e){
+    if(e.target.tagName === "A") e.preventDefault();
+}, true);
+
+console.log('%c🛡️ Lz Protect Activado (GitHub Pages)', 'color:#ffd700; font-size:12px');
 </script>
 </body>
 </html>
