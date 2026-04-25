@@ -5,56 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lz Protect Player</title>
 <style>
-html,body{
-margin:0;
-height:100%;
-background:#000;
-overflow:hidden;
-}
-iframe{
-width:100%;
-height:100%;
-border:none;
-}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+iframe{width:100%;height:100%;border:none;}
 </style>
 </head>
 <body>
-<iframe id="frame"
-        referrerpolicy="no-referrer"
-        allowfullscreen
-        allow="autoplay; fullscreen; encrypted-media; picture-in-picture">
-</iframe>
+<iframe id="frame" referrerpolicy="no-referrer" allowfullscreen></iframe>
 
 <script>
-function getParam(name) {
-    return new URLSearchParams(location.search).get(name);
+const code = new URLSearchParams(location.search).get("v");
+if (code) {
+    document.getElementById("frame").src = "data:text/html;base64," + code;
+} else {
+    document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ Error</h2>`;
 }
-
-try {
-    let param = getParam("url");
-    if (param) {
-        let originalUrl = decodeURIComponent(param);
-        document.getElementById("frame").src = originalUrl;
-    } else {
-        document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ No se recibió enlace</h2>`;
-    }
-} catch (e) {
-    document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ Error al cargar el enlace</h2>`;
-}
-
-// ==================== PROTECCIONES JS (sin sandbox) ====================
-window.open = function(){ return null; };           // Bloquea pop-ups
-window.alert = window.confirm = window.prompt = () => null;
-
-// Bloquea menú contextual
-document.addEventListener("contextmenu", e => e.preventDefault());
-
-// Bloquea algunos intentos de redirección
-document.addEventListener("click", function(e){
-    if(e.target.tagName === "A") e.preventDefault();
-}, true);
-
-console.log('%c🛡️ Lz Protect Activado (GitHub Pages)', 'color:#ffd700; font-size:12px');
 </script>
 </body>
 </html>
