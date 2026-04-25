@@ -31,19 +31,19 @@ function getParam(name) {
 }
 
 try {
-    const code = getParam("v");
-    if (code) {
-        const dataUrl = "data:text/html;base64," + code;
-        document.getElementById("frame").src = dataUrl;
+    let param = getParam("url");
+    if (param) {
+        let originalUrl = decodeURIComponent(param);
+        document.getElementById("frame").src = originalUrl;
     } else {
-        document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:40px">❌ No se recibió código</h2>`;
+        document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ No se recibió enlace</h2>`;
     }
 } catch (e) {
-    document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:40px">❌ Error al decodificar</h2>`;
+    document.body.innerHTML = `<h2 style="color:white;text-align:center;padding-top:80px">❌ Error al cargar el enlace</h2>`;
 }
 
 // Protecciones extras
-window.open = function() { return null; };
+window.open = function(){ return null; };
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 </body>
