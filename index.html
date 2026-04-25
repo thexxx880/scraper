@@ -5,61 +5,154 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Panel Lz Protect</title>
 <style>
-body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
-.box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
-textarea,input{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;background:#1c1c1c;color:#fff;font-size:16px;}
-button{width:100%;padding:16px;margin-top:15px;border:none;border-radius:10px;background:linear-gradient(90deg,#ffd700,#ffae00);color:#000;font-weight:bold;cursor:pointer;font-size:18px;}
-#resultado{margin-top:15px;padding:12px;background:#1c1c1c;border-radius:10px;word-break:break-all;font-size:14px;max-height:400px;overflow:auto;}
-small{color:#aaa;display:block;margin-top:15px;text-align:center;}
-#status{margin-top:10px;text-align:center;font-size:14px;}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+body{
+background:#0b0b0b;
+font-family:Arial,Helvetica,sans-serif;
+color:#fff;
+padding:20px;
+}
+.box{
+max-width:800px;
+margin:auto;
+background:#111;
+padding:25px;
+border-radius:16px;
+border:1px solid #ffd700;
+box-shadow:0 0 25px rgba(255,215,0,.25);
+}
+h2{
+text-align:center;
+margin-bottom:20px;
+color:#ffd700;
+}
+textarea{
+width:100%;
+height:130px;
+resize:none;
+padding:15px;
+border:none;
+outline:none;
+border-radius:12px;
+background:#1c1c1c;
+color:#fff;
+font-size:16px;
+}
+button{
+width:100%;
+padding:15px;
+margin-top:15px;
+border:none;
+border-radius:12px;
+font-size:17px;
+font-weight:bold;
+cursor:pointer;
+background:linear-gradient(90deg,#ffd700,#ff9800);
+color:#000;
+}
+button:hover{
+opacity:.9;
+}
+#status{
+margin-top:15px;
+text-align:center;
+font-size:15px;
+color:#ffd700;
+}
+#resultado{
+margin-top:18px;
+padding:15px;
+background:#1c1c1c;
+border-radius:12px;
+word-break:break-all;
+line-height:1.6;
+}
+a{
+color:#ffd700;
+text-decoration:none;
+}
+.copyBtn{
+background:#222;
+color:#ffd700;
+margin-top:12px;
+padding:12px 20px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+}
+small{
+display:block;
+margin-top:15px;
+text-align:center;
+color:#999;
+}
+@media(max-width:700px){
+body{padding:10px;}
+.box{padding:18px;}
+}
 </style>
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
-    <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx o cualquier otro host"></textarea>
-    <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
-    <div id="resultado"></div>
-    <div id="status"></div>
-    <small>Video en pantalla completa + anti-ads y anti-popups (compatible con más hosts)</small>
+<h2>🔐 Panel Lz Protect</h2>
+<textarea id="url" placeholder="Pega aquí tu enlace... (argtesa, uqload, etc.)"></textarea>
+<button onclick="generar()">🚀 Generar Página Limpia</button>
+<div id="status"></div>
+<div id="resultado"></div>
+<small>Extrae video directo • Anti Popups • Pantalla completa • Compatible con más hosts</small>
 </div>
 
 <script>
-// Proxies (puedes añadir más si quieres)
+// === PROXIES MEJORADOS (más opciones = más compatibilidad) ===
 const proxies = [
-    "https://corsproxy.io/?",
     "https://api.allorigins.win/raw?url=",
+    "https://corsproxy.io/?",
     "https://api.codetabs.com/v1/proxy?quest=",
     "https://thingproxy.freeboard.io/fetch/",
     "https://cors.bridged.cc/",
     "https://proxy.killcors.com/?url="
 ];
 
-// Función para extraer enlaces directos de video
+// === EXTRACCIÓN DE VIDEO MÁS INTELIGENTE ===
 function extraerVideoDirecto(html) {
     const regex = /https?:\/\/[^"\s'<>]+?\.(mp4|m3u8|webm|ts|mov)(?:\?[^"\s'<>]*)?/gi;
     let matches = html.match(regex) || [];
+    
+    // Filtramos los más probables (evitamos thumbs, banners, logos, etc.)
     matches = matches.filter(url => {
         const lower = url.toLowerCase();
-        return url.length > 60 &&
+        return url.length > 70 &&
                !lower.includes('thumb') &&
                !lower.includes('preview') &&
                !lower.includes('banner') &&
                !lower.includes('logo') &&
                !lower.includes('ad') &&
-               !lower.includes('sponsor');
+               !lower.includes('sponsor') &&
+               !lower.includes('icon');
     });
+    
     if (matches.length === 0) return null;
+    // Devolvemos el más largo (normalmente es el video principal)
     return matches.sort((a, b) => b.length - a.length)[0];
 }
 
 async function generar() {
     const urlInput = document.getElementById("url").value.trim();
     const status = document.getElementById("status");
-    if (!urlInput) return alert("❌ Pega un enlace válido");
+    const resultado = document.getElementById("resultado");
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Obteniendo página...</span>`;
-    document.getElementById("resultado").innerHTML = "";
+    if (!urlInput) {
+        alert("❌ Pega una URL válida");
+        return;
+    }
+
+    status.innerHTML = "🔄 Obteniendo página...";
+    resultado.innerHTML = "";
 
     let html = null;
     for (let proxy of proxies) {
@@ -73,131 +166,128 @@ async function generar() {
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:red">❌ No se pudo obtener la página.</span>`;
+        status.innerHTML = "❌ No se pudo obtener la página";
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🔍 Buscando video directo...</span>`;
+    status.innerHTML = "🔍 Buscando video directo...";
 
-    // === 1. INTENTAR EXTRAER VIDEO DIRECTO ===
+    // === 1. INTENTO PRINCIPAL: VIDEO DIRECTO ===
     const videoDirecto = extraerVideoDirecto(html);
-    
+
     if (videoDirecto) {
-        // HTML LIMPIO sin funciones flecha (esto arregla el SyntaxError)
         const cleanHTML = `<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Video Limpio - Lz Protect</title>
-    <style>
-        html, body {margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:#000;}
-        video {
-            width:100vw !important;
-            height:100vh !important;
-            object-fit:contain !important;
-            background:#000;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Limpio - Lz Protect</title>
+<style>
+html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:#000;}
+video{width:100vw;height:100vh;object-fit:contain;background:#000;}
+</style>
 </head>
 <body>
-    <video id="player" controls autoplay playsinline>
-        <source src="${videoDirecto}" type="video/mp4">
-        <source src="${videoDirecto}" type="application/x-mpegURL">
-    </video>
-    <script>
-        // ANTI-POPUPS (versión sin arrow functions)
-        window.open = function() { return null; };
-        window.alert = function() { return null; };
-        window.confirm = function() { return null; };
-        window.prompt = function() { return null; };
-        
-        // Bloquear enlaces y clics peligrosos
-        document.addEventListener('click', function(e) {
-            if (e.target.tagName === 'A' || e.target.closest('a')) {
-                e.preventDefault();
-            }
-        }, true);
-        
-        // Reproductor
-        var video = document.getElementById('player');
-        video.volume = 0.8;
-        video.play().catch(function() {});
-    <\/script>
+<video id="player" controls autoplay playsinline>
+<source src="${videoDirecto}" type="video/mp4">
+<source src="${videoDirecto}" type="application/x-mpegURL">
+</video>
+<script>
+window.open=function(){return null;};
+window.alert=function(){return null;};
+window.confirm=function(){return null;};
+window.prompt=function(){return null;};
+document.addEventListener('click',function(e){
+if(e.target.tagName==='A'||e.target.closest('a'))e.preventDefault();
+},true);
+var video=document.getElementById('player');
+video.volume=0.8;
+video.play().catch(function(){});
+<\/script>
 </body>
 </html>`;
 
-        const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
-        const dataUrl = "data:text/html;base64," + base64;
+        const blob = new Blob([cleanHTML], {type: "text/html"});
+        const link = URL.createObjectURL(blob);
 
-        document.getElementById("resultado").innerHTML = `
-            <strong>✅ Video directo encontrado:</strong><br>
-            <small>${videoDirecto}</small><br><br>
-            <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;font-size:15px;">▶ Abrir Video en Pantalla Completa (Limpio)</a><br><br>
-            <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:12px 24px;border-radius:8px;cursor:pointer;">📋 Copiar Enlace</button>
-            <p style="font-size:12px;color:#aaa;margin-top:10px;">Reproductor HTML5 nativo • Sin anuncios • Sin popups</p>
-        `;
-        status.innerHTML = `<span style="color:lime">✅ ¡Listo! Video directo detectado.</span>`;
+        resultado.innerHTML = `
+<b>✅ Video directo encontrado:</b><br><br>
+<small>${videoDirecto}</small><br><br>
+<a href="${link}" target="_blank" style="font-size:16px;">▶ Abrir en Pantalla Completa</a><br>
+<button class="copyBtn" onclick="copiar('${link}',this)">📋 Copiar enlace</button>
+<p style="font-size:13px;color:#aaa;margin-top:10px;">Reproductor HTML5 • Sin anuncios • Sin popups</p>
+`;
+        status.innerHTML = "✅ ¡Listo! Video directo detectado";
         return;
     }
 
-    // === 2. FALLBACK: Limpieza completa (también sin arrow functions) ===
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando página completa...</span>`;
+    // === 2. FALLBACK: Limpieza completa de la página ===
+    status.innerHTML = "🧹 No encontré video directo → Limpiando página completa...";
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
+    // Limpieza agresiva
     doc.querySelectorAll('noscript, iframe, embed, object, frame, script, link[rel="stylesheet"], style').forEach(el => el.remove());
     
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.player-ad','[class*="cookie"]'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
+    // Eliminar eventos on*
     doc.querySelectorAll('*').forEach(el => {
         Array.from(el.attributes).forEach(attr => {
             if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
         });
     });
 
+    // CSS pantalla completa
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
-        html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
-        video, .video, [class*="player"], [id*="player"], iframe {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
-        * {margin:0!important;padding:0!important;}
-    `;
+html,body{margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
+video,.video,[class*="player"],[id*="player"]{width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
+*{margin:0!important;padding:0!important;}
+`;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups SIN arrow functions
+    // Anti-popups + mock jQuery (sin arrow functions)
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
-        window.open = function() { return null; };
-        window.alert = function() { return null; };
-        window.confirm = function() { return null; };
-        window.prompt = function() { return null; };
-        Object.defineProperty(window, 'location', {set: function() {}});
-        
-        // Mock jQuery
-        window.jQuery = window.$ = function() { return { tooltip: function(){}, cookie: function(){} }; };
-        $.fn = $.prototype = { tooltip: function(){} };
-        
-        document.addEventListener('click', function(e) {
-            if (e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
-        }, true);
-        
-        new MutationObserver(function() {
-            document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(function(el) { el.remove(); });
-        }).observe(document.body, {childList:true, subtree:true});
-    `;
+window.open=function(){return null;};
+window.alert=function(){return null;};
+window.confirm=function(){return null;};
+window.prompt=function(){return null;};
+Object.defineProperty(window,'location',{set:function(){}});
+window.jQuery=window.$=function(){return{tooltip:function(){},cookie:function(){}}};
+$.fn=$.prototype={tooltip:function(){}};
+document.addEventListener('click',function(e){
+if(e.target.tagName==='A'||e.target.closest('a'))e.preventDefault();
+},true);
+new MutationObserver(function(){
+document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(function(el){el.remove();});
+}).observe(document.body,{childList:true,subtree:true});
+`;
     doc.head.appendChild(antiScript);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
-    const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
-    const dataUrl = "data:text/html;base64," + base64;
+    const blob = new Blob([cleanHTML], {type: "text/html"});
+    const link = URL.createObjectURL(blob);
 
-    document.getElementById("resultado").innerHTML = `
-        <strong>✅ Página limpia generada (fallback):</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir en Pantalla Completa</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
-    `;
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! (Modo fallback activado)</span>`;
+    resultado.innerHTML = `
+<b>✅ Página limpia generada (fallback)</b><br><br>
+<a href="${link}" target="_blank" style="font-size:16px;">▶ Abrir en Pantalla Completa</a><br>
+<button class="copyBtn" onclick="copiar('${link}',this)">📋 Copiar enlace</button>
+<p style="font-size:13px;color:#aaa;margin-top:10px;">Modo completo • Anti-ads • Anti-popups • Anti-jQuery errors</p>
+`;
+    status.innerHTML = "✅ ¡Listo! (Modo fallback)";
+}
+
+// Función copiar (mejorada)
+function copiar(texto, btn) {
+    navigator.clipboard.writeText(texto).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = "✅ Copiado!";
+        setTimeout(() => { btn.innerHTML = original; }, 2000);
+    });
 }
 </script>
 </body>
