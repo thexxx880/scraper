@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Lz Protect</title>
+<title>Panel Lz Protect + Plyr</title>
 <style>
 body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
@@ -16,12 +16,12 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect + Plyr Player</h2>
     <textarea id="url" rows="3" placeholder="Pega aquí tu enlace... https://argtesa.top/?v=xxx"></textarea>
-    <button onclick="generar()">🚀 Generar Página Limpia (Anti-Ads + Anti-Popups)</button>
+    <button onclick="generar()">🚀 Generar con Plyr (Adelantar/Retroceder 10s)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Ahora genera directamente una data: URL (sin límite de longitud)</small>
+    <small>Ahora incluye Plyr.io con controles profesionales + flechas ← → para 10 segundos</small>
 </div>
 
 <script>
@@ -59,13 +59,13 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando anuncios y pop-ups...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + Inyectando Plyr Player...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza
-    doc.querySelectorAll('script, noscript, iframe, embed, object, frame').forEach(el => el.remove());
+    // Limpieza (mantengo los elementos del video)
+    doc.querySelectorAll('noscript, iframe, embed, object, frame').forEach(el => el.remove());
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
@@ -76,7 +76,44 @@ async function generar() {
         });
     });
 
-    // Anti-popups ultra fuerte dentro de la página
+    // === INYECTAR PLYR.IO ===
+    const plyrCSS = doc.createElement('link');
+    plyrCSS.rel = 'stylesheet';
+    plyrCSS.href = 'https://cdn.plyr.io/3.7.8/plyr.css';
+    doc.head.appendChild(plyrCSS);
+
+    const plyrJS = doc.createElement('script');
+    plyrJS.src = 'https://cdn.plyr.io/3.7.8/plyr.polyfilled.js';
+    doc.body.appendChild(plyrJS);
+
+    // Script de inicialización de Plyr + controles +10s / -10s
+    const initPlyr = doc.createElement('script');
+    initPlyr.textContent = `
+        window.addEventListener('load', () => {
+            const videos = document.querySelectorAll('video');
+            if (videos.length > 0) {
+                videos.forEach((video, index) => {
+                    const player = new Plyr(video, {
+                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                        settings: ['quality', 'speed'],
+                        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+                        keyboard: { enabled: true, global: true }
+                    });
+
+                    // Atajos de teclado: Flecha derecha = +10s | Flecha izquierda = -10s
+                    document.addEventListener('keydown', e => {
+                        if (e.key === "ArrowRight") player.currentTime += 10;
+                        if (e.key === "ArrowLeft") player.currentTime -= 10;
+                    });
+
+                    console.log('%c🎥 Plyr Player ' + (index+1) + ' activado con +10s / -10s', 'color:#ffd700;font-size:14px');
+                });
+            }
+        });
+    `;
+    doc.body.appendChild(initPlyr);
+
+    // Anti-popups ultra fuerte
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
         window.open = () => null;
@@ -88,7 +125,6 @@ async function generar() {
         new MutationObserver(() => {
             document.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.sponsor').forEach(el => el.remove());
         }).observe(document.body, {childList:true, subtree:true});
-        console.log('%c🛡️ Lz Protect FULL ACTIVADO', 'color:#ffd700;font-size:12px');
     `;
     doc.head.appendChild(antiScript);
 
@@ -96,15 +132,15 @@ async function generar() {
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
     const dataUrl = "data:text/html;base64," + base64;
 
-    // Mostrar la URL limpia (data:)
+    // Mostrar resultado
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Tu página limpia (sin ads ni pop-ups):</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir página limpia</a><br><br>
-        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar data: URL completa</button>
-        <p style="font-size:12px;margin-top:10px;color:#aaa;">Pega esta URL en una nueva pestaña. Es 100% offline y bloquea pop-ups y anuncios.</p>
+        <strong>✅ Página con Plyr Player lista:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">▶ Abrir Video con Plyr</a><br><br>
+        <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar data: URL</button>
+        <p style="font-size:12px;margin-top:10px;color:#aaa;">Usa las flechas del teclado ← → para adelantar/retroceder 10 segundos</p>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace de arriba.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Abre el enlace y disfruta del reproductor Plyr</span>`;
 }
 </script>
 </body>
