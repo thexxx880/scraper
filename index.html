@@ -18,7 +18,8 @@ margin:auto;
 background:#111;
 padding:25px;
 border-radius:14px;
-box-shadow:0 0 20px rgba(255,215,0,.15);
+box-shadow:0 0 30px rgba(255,215,0,.3);
+border:1px solid #ffd700;
 }
 textarea,input,select{
 width:100%;
@@ -36,39 +37,50 @@ margin-top:15px;
 border:none;
 border-radius:10px;
 background:linear-gradient(90deg,#ffd700,#ffae00);
+color:#000;
 font-weight:bold;
 cursor:pointer;
-font-size:16px;
+font-size:17px;
+box-shadow:0 4px 15px rgba(255,215,0,.4);
+}
+button:hover{
+transform:scale(1.03);
 }
 small{
 color:#aaa;
 }
 #status { margin-top:10px; text-align:center; font-size:14px; min-height:24px; }
+#resultado{
+margin-top:10px;
+font-size:15px;
+}
 </style>
 </head>
 <body>
 <div class="box">
-    <h2>🔐 Panel Lz Protect</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect</h2>
+    
     <textarea id="url" rows="4" placeholder="Pega aquí tu enlace... https://ejemplo.com"></textarea>
     
     <button onclick="generar()">🚀 Generar URL Protegida (Anti-Ads)</button>
     
     <input id="resultado" readonly placeholder="Tu URL protegida aparecerá aquí">
+    
     <div id="status"></div>
     
-    <small>Ahora con 6 proxies + fallback automático.<br>
-    Si sigue fallando, el sitio tiene protección fuerte (Cloudflare).</small>
+    <small>✅ Ahora detecta automáticamente la carpeta y el nombre de tu archivo.<br>
+    Funciona aunque lo llames scraper.html, panel.html o lo tengas en /scraper/</small>
 </div>
 
 <script>
-// Lista de proxies actualizada 2026 (los más estables)
+// Lista de proxies (muy estables en 2026)
 const proxies = [
-    "https://api.allorigins.win/raw?url=",     // Muy estable
-    "https://corsproxy.io/?",                  // Rápido
-    "https://api.codetabs.com/v1/proxy?quest=", // Bueno contra bloqueos
-    "https://cors.bridged.cc/",                // Cloudflare friendly
-    "https://proxy.killcors.com/?url=",        // Nuevo y sin límites
-    "https://thingproxy.freeboard.io/fetch/"   // Clásico
+    "https://api.allorigins.win/raw?url=",
+    "https://corsproxy.io/?",
+    "https://api.codetabs.com/v1/proxy?quest=",
+    "https://cors.bridged.cc/",
+    "https://proxy.killcors.com/?url=",
+    "https://thingproxy.freeboard.io/fetch/"
 ];
 
 async function generar() {
@@ -80,50 +92,42 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffae00">🔄 Intentando con proxies...</span>`;
+    status.innerHTML = `<span style="color:#ffae00">🔄 Buscando proxy que funcione...</span>`;
     document.getElementById("resultado").value = "";
 
     let html = null;
     let usedProxy = "";
 
-    // Intentar cada proxy hasta que funcione
-    for (let i = 0; i < proxies.length; i++) {
-        const proxy = proxies[i];
+    for (let proxy of proxies) {
         const fullUrl = proxy + encodeURIComponent(urlInput);
-        
-        status.innerHTML = `<span style="color:#ffae00">🔄 Probando proxy ${i+1}/${proxies.length}...</span>`;
+        status.innerHTML = `<span style="color:#ffae00">🔄 Probando proxy...</span>`;
 
         try {
-            const response = await fetch(fullUrl, { 
-                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            const response = await fetch(fullUrl, {
+                headers: { "User-Agent": "Mozilla/5.0" }
             });
-
             if (response.ok) {
                 html = await response.text();
                 usedProxy = proxy;
-                break; // ¡Éxito!
-            } else if (response.status === 403 || response.status === 429) {
-                console.log(`Proxy ${i+1} bloqueado (403/429)`);
+                break;
             }
-        } catch (e) {
-            console.log(`Proxy ${i+1} falló`);
-        }
+        } catch (e) {}
     }
 
     if (!html) {
-        status.innerHTML = `<span style="color:#ff4444">❌ Todos los proxies fallaron (403).<br>El sitio tiene protección anti-scraper fuerte.</span>`;
+        status.innerHTML = `<span style="color:#ff4444">❌ Todos los proxies fallaron (403).<br>El sitio tiene protección fuerte (Cloudflare).</span>`;
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">✅ Usando ${usedProxy.split('/')[2]} → Limpiando...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">✅ Página obtenida → Limpiando ads...</span>`;
 
-    // === LIMPIEZA AGRESIVA (igual que antes) ===
+    // LIMPIEZA AGRESIVA
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
     doc.querySelectorAll('script, noscript, iframe, embed, object, frame').forEach(el => el.remove());
     
-    const adSelectors = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','[onclick]','[onload]'];
+    const adSelectors = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','[onclick]','[onload]'];
     adSelectors.forEach(sel => {
         doc.querySelectorAll(sel).forEach(el => {
             if (el.tagName !== "BODY" && el.tagName !== "HTML") el.remove();
@@ -136,23 +140,19 @@ async function generar() {
         });
     });
 
-    // Anti-popups dentro del HTML limpio
     const antiScript = doc.createElement('script');
-    antiScript.textContent = `
-        window.open = () => null;
-        window.alert = window.confirm = window.prompt = () => null;
-        document.addEventListener('click', e => { if(e.target.tagName==='A') e.preventDefault(); }, true);
-        console.log('%c🛡️ Lz Protect Activado', 'color:#ffd700');
-    `;
+    antiScript.textContent = `window.open=()=>null;window.alert=window.confirm=window.prompt=()=>null;document.addEventListener('click',e=>{if(e.target.tagName==='A')e.preventDefault();},true);console.log('%c🛡️ Lz Protect Activado','color:#ffd700');`;
     doc.head.appendChild(antiScript);
 
     const cleanHTML = new XMLSerializer().serializeToString(doc);
     const base64 = btoa(unescape(encodeURIComponent(cleanHTML)));
 
-    const finalUrl = location.origin + location.pathname.replace("index.html", "player.html") + "?v=" + base64;
-    
+    // === AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE ===
+    const playerPath = location.pathname.replace(/[^/]*$/, "player.html");
+    const finalUrl = location.origin + playerPath + "?v=" + base64;
+
     document.getElementById("resultado").value = finalUrl;
-    status.innerHTML = `<span style="color:#00ff00">✅ ¡URL Protegida lista! (Proxy: ${usedProxy.split('/')[2]})</span>`;
+    status.innerHTML = `<span style="color:#00ff00">✅ ¡URL lista! Copia y ábrela</span>`;
 }
 </script>
 </body>
