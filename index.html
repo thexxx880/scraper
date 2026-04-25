@@ -21,7 +21,7 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
     <button onclick="generar()">🚀 Generar Página Limpia (Pantalla Completa)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión más compatible con embeds difíciles</small>
+    <small>Versión corregida para embeds difíciles (cubeembed, rpmvid, etc.)</small>
 </div>
 
 <script>
@@ -59,14 +59,13 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando a pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">🧹 Limpiando + ajustando pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Limpieza más suave (para no romper reproductores como cubeembed)
+    // Limpieza suave
     doc.querySelectorAll('noscript, iframe[src*="ad"], embed, object, frame').forEach(el => el.remove());
-    
     const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup','.tag'];
     ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
 
@@ -74,21 +73,31 @@ async function generar() {
     const fullCSS = doc.createElement('style');
     fullCSS.textContent = `
         html, body {margin:0!important;padding:0!important;height:100%!important;width:100%!important;overflow:hidden!important;background:#000!important;}
-        video, .video, [class*="player"], [id*="player"], iframe {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
+        video, iframe, .video, [class*="player"], [id*="player"] {width:100vw!important;height:100vh!important;object-fit:contain!important;background:#000!important;}
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups (sintaxis segura - sin arrow functions)
+    // Anti-popups MEJORADO (evita el error de "Cannot redefine property: location")
     const antiScript = doc.createElement('script');
     antiScript.textContent = `
-        window.open = function(){ return null; };
-        window.alert = function(){};
-        window.confirm = function(){};
-        window.prompt = function(){};
-        Object.defineProperty(window, 'location', {set: function(){}});
-        document.addEventListener('click', function(e){
-            if(e.target.tagName === 'A' || e.target.closest('a')) e.preventDefault();
-        }, true);
+        try {
+            window.open = function(){ return null; };
+            window.alert = function(){};
+            window.confirm = function(){};
+            window.prompt = function(){};
+            // Protección de location más segura
+            if (typeof Object.defineProperty === 'function') {
+                try {
+                    Object.defineProperty(window, 'location', {
+                        set: function(){},
+                        configurable: true
+                    });
+                } catch(e) {}
+            }
+            document.addEventListener('click', function(e){
+                if(e.target.tagName === 'A' || e.target.closest && e.target.closest('a')) e.preventDefault();
+            }, true);
+        } catch(e) {}
         console.log('%c🛡️ Lz Protect Activado', 'color:#ffd700');
     `;
     doc.head.appendChild(antiScript);
@@ -98,12 +107,12 @@ async function generar() {
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Página lista en pantalla completa:</strong><br><br>
+        <strong>✅ Página lista:</strong><br><br>
         <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL Completa</button>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba el enlace (si ves error, desactiva temporalmente el adblocker)</span>`;
+    status.innerHTML = `<span style="color:lime">✅ ¡Listo! Prueba con https://cubeembed.rpmvid.com/#1x85b</span>`;
 }
 </script>
 </body>
