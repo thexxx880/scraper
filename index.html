@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Lz Protect - VidHide</title>
+<title>Panel Lz Protect - Ultra Ligero</title>
 <style>
 body{background:#0b0b0b;font-family:Arial;color:#fff;padding:20px;margin:0;}
 .box{max-width:700px;margin:auto;background:#111;padding:25px;border-radius:14px;box-shadow:0 0 30px rgba(255,215,0,.3);border:1px solid #ffd700;}
@@ -16,12 +16,12 @@ small{color:#aaa;display:block;margin-top:15px;text-align:center;}
 </head>
 <body>
 <div class="box">
-    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect - VidHide</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">🔐 Panel Lz Protect - Ultra Ligero</h2>
     <textarea id="url" rows="3" placeholder="Pega tu enlace de VidHide aquí"></textarea>
-    <button onclick="generar()">🚀 Generar (Limpieza MÍNIMA)</button>
+    <button onclick="generar()">🚀 Generar (Mínimo posible)</button>
     <div id="resultado"></div>
     <div id="status"></div>
-    <small>Versión ultra-ligera: solo pantalla completa</small>
+    <small>Versión con limpieza casi nula + solo pantalla completa</small>
 </div>
 
 <script>
@@ -56,14 +56,13 @@ async function generar() {
         return;
     }
 
-    status.innerHTML = `<span style="color:#ffd700">Ajustando a pantalla completa...</span>`;
+    status.innerHTML = `<span style="color:#ffd700">Solo aplicando pantalla completa...</span>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // LIMPIEZA EXTREMADAMENTE LIGERA (solo ads visibles)
-    const ads = ['[class*="ad"]','[id*="ad"]','.ads','.advert','.sponsor','.promoted','.popup'];
-    ads.forEach(sel => doc.querySelectorAll(sel).forEach(el => el.remove()));
+    // NO eliminamos casi nada (solo ads muy obvios)
+    doc.querySelectorAll('[class*="ad"],[id*="ad"],.ads,.advert,.sponsor,.promoted,.popup').forEach(el => el.remove());
 
     // Solo CSS de pantalla completa
     const fullCSS = doc.createElement('style');
@@ -73,7 +72,7 @@ async function generar() {
     `;
     doc.head.appendChild(fullCSS);
 
-    // Anti-popups mínimo posible
+    // Anti-popups mínimo absoluto
     const anti = doc.createElement('script');
     anti.textContent = `window.open=function(){return null;};`;
     doc.head.appendChild(anti);
@@ -83,12 +82,12 @@ async function generar() {
     const dataUrl = "data:text/html;base64," + base64;
 
     document.getElementById("resultado").innerHTML = `
-        <strong>✅ Enlace VidHide listo:</strong><br><br>
-        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir en Pantalla Completa</a><br><br>
+        <strong>✅ Enlace listo:</strong><br><br>
+        <a href="${dataUrl}" target="_blank" style="color:#ffd700;word-break:break-all;">Abrir Video en Pantalla Completa</a><br><br>
         <button onclick="navigator.clipboard.writeText('${dataUrl}');this.innerHTML='✅ Copiado!'" style="background:#222;color:#ffd700;padding:10px 20px;border-radius:8px;">📋 Copiar URL</button>
     `;
 
-    status.innerHTML = `<span style="color:lime">✅ Listo. Abre el enlace.</span>`;
+    status.innerHTML = `<span style="color:lime">✅ Listo. Prueba con https://dhtpre.com/embed/xzgds6v30wet</span>`;
 }
 </script>
 </body>
